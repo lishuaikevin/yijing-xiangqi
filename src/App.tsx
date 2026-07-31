@@ -208,6 +208,7 @@ export default function App() {
   const [board, setBoard] = useState<Board>(() => createInitialBoard())
   const [turn, setTurn] = useState<Side>('red')
   const [selected, setSelected] = useState<Position | null>(null)
+  const [hovered, setHovered] = useState<Position | null>(null)
   const [legalMoves, setLegalMoves] = useState<Position[]>([])
   const [lastMove, setLastMove] = useState<ChessMove | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
@@ -506,6 +507,8 @@ export default function App() {
                       className={`board-square ${isLegal ? 'is-legal' : ''} ${isSelected ? 'is-selected' : ''} ${isLastFrom ? 'is-last-from' : ''} ${isLastTo ? 'is-last-to' : ''}`}
                       style={boardPositionStyle(displayRow, displayCol)}
                       onClick={() => handleSquareClick(actual)}
+                      onMouseEnter={() => target && setHovered(actual)}
+                      onMouseLeave={() => target && setHovered(null)}
                       aria-label={`${row + 1} 行 ${col + 1} 列${target ? `，${sideName[target.side]}${PIECE_TEXT[target.side][target.type]}` : ''}`}
                     >
                       {isLegal && <span className={target ? 'capture-hint' : 'move-hint'} />}
@@ -520,11 +523,12 @@ export default function App() {
                   const displayRow = flipped ? 9 - rowIndex : rowIndex
                   const displayCol = flipped ? 8 - colIndex : colIndex
                   const isSelected = selected?.row === rowIndex && selected.col === colIndex
+                  const isHovered = hovered?.row === rowIndex && hovered.col === colIndex
                   const isChecked = checkedKing?.row === rowIndex && checkedKing.col === colIndex
                   return (
                     <div
                       key={piece.id}
-                      className={`chess-piece ${piece.side} ${isSelected ? 'selected' : ''} ${isChecked ? 'in-check' : ''} ${history.length === 0 ? 'piece-enter' : ''}`}
+                      className={`chess-piece ${piece.side} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${isChecked ? 'in-check' : ''} ${history.length === 0 ? 'piece-enter' : ''}`}
                       style={{
                         ...boardPositionStyle(displayRow, displayCol),
                         '--enter-delay': `${(rowIndex * 9 + colIndex) * 9}ms`,
