@@ -7,6 +7,7 @@ import {
   Clock3,
   Flag,
   FlipVertical2,
+  Palette,
   RotateCcw,
   Settings2,
   Sparkles,
@@ -39,6 +40,7 @@ import {
 
 type GameMode = 'ai' | 'local'
 type GamePhase = 'playing' | 'check' | 'finished'
+type ThemeId = 'night' | 'celadon' | 'ink' | 'cyber'
 
 interface HistoryEntry {
   board: Board
@@ -50,6 +52,12 @@ interface HistoryEntry {
 
 const sideName: Record<Side, string> = { red: '红方', black: '黑方' }
 const difficultyName: Record<Difficulty, string> = { easy: '入门', normal: '棋手', hard: '大师' }
+const themeOptions: Array<{ id: ThemeId; name: string; description: string; browserColor: string }> = [
+  { id: 'night', name: '夜阑木韵', description: '温润原木', browserColor: '#0b0d0f' },
+  { id: 'celadon', name: '青瓷云岚', description: '雨过天青', browserColor: '#10211f' },
+  { id: 'ink', name: '水墨长卷', description: '宣纸墨意', browserColor: '#d8c7a3' },
+  { id: 'cyber', name: '霓虹残局', description: '未来棋局', browserColor: '#030711' },
+]
 const positionKey = (position: Position) => `${position.row}-${position.col}`
 const samePosition = (a: Position, b: Position) => a.row === b.row && a.col === b.col
 // 棋盘线位于 SVG 的 x=50…850、y=50…950，使用同一套精确坐标避免标记产生像素偏移。
@@ -219,6 +227,10 @@ export default function App() {
   const [winner, setWinner] = useState<Side | null>(null)
   const [endReason, setEndReason] = useState('')
   const [soundOn, setSoundOn] = useState(true)
+  const [theme, setTheme] = useState<ThemeId>(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('yijing-theme') : null
+    return themeOptions.some(option => option.id === saved) ? saved as ThemeId : 'night'
+  })
   const [flipped, setFlipped] = useState(false)
   const [aiThinking, setAiThinking] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
@@ -335,6 +347,13 @@ export default function App() {
     historyEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [history.length])
 
+  useEffect(() => {
+    window.localStorage.setItem('yijing-theme', theme)
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    const selectedTheme = themeOptions.find(option => option.id === theme)
+    if (meta && selectedTheme) meta.content = selectedTheme.browserColor
+  }, [theme])
+
   const startNewGame = useCallback((nextMode: GameMode = mode) => {
     setBoard(createInitialBoard())
     setTurn('red')
@@ -410,7 +429,7 @@ export default function App() {
       : `第 ${Math.floor(history.length / 2) + 1} 回合`
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={theme}>
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
 
@@ -439,6 +458,21 @@ export default function App() {
                 <div className="segmented compact">
                   {(['easy', 'normal', 'hard'] as Difficulty[]).map(level => (
                     <button key={level} className={difficulty === level ? 'active' : ''} onClick={() => setDifficulty(level)}>{difficultyName[level]}</button>
+                  ))}
+                </div>
+                <label className="theme-picker-label"><Palette size={13} />视觉主题</label>
+                <div className="theme-grid">
+                  {themeOptions.map(option => (
+                    <button
+                      key={option.id}
+                      className={theme === option.id ? 'active' : ''}
+                      onClick={() => setTheme(option.id)}
+                      aria-pressed={theme === option.id}
+                    >
+                      <span className={`theme-preview preview-${option.id}`}><i /><i /></span>
+                      <strong>{option.name}</strong>
+                      <small>{option.description}</small>
+                    </button>
                   ))}
                 </div>
                 <button className="setting-line" onClick={() => setFlipped(value => !value)}><FlipVertical2 size={17} /><span>翻转棋盘</span><i>{flipped ? '已翻转' : '红方视角'}</i></button>
